@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type {
   AttendanceRecord,
   AttendanceSummary,
   FilterState,
-  SyncResult,
 } from "@/types/attendance";
 
 const today = new Date().toISOString().split("T")[0];
@@ -16,83 +15,104 @@ const defaultFilter: FilterState = {
   date: today,
 };
 
-const defaultSummary: AttendanceSummary = {
-  total: 0,
-  present: 0,
-  absent: 0,
-  late: 0,
-  onLeave: 0,
-};
+// ── Static student records ──────────────────────────────────────────
+const staticRecords: AttendanceRecord[] = [
+  {
+    student: { id: "1", code: "STU001", name: "Aarav Sharma", gender: "Male", contact: "9876543210", rollNo: "01", standard: "10A" },
+    date: today, punchIn: "08:05:32", punchOut: "14:30:10", serialNumber: "DEV-001", status: "Present", temperature: 36.5, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "2", code: "STU002", name: "Priya Patel", gender: "Female", contact: "9876543211", rollNo: "02", standard: "10A" },
+    date: today, punchIn: "08:45:11", punchOut: "14:28:55", serialNumber: "DEV-001", status: "Late", temperature: 36.7, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "3", code: "STU003", name: "Rohan Mehta", gender: "Male", contact: "9876543212", rollNo: "03", standard: "10A" },
+    date: today, punchIn: null, punchOut: null, serialNumber: "DEV-001", status: "Absent", logCount: 0,
+  },
+  {
+    student: { id: "4", code: "STU004", name: "Ananya Gupta", gender: "Female", contact: "9876543213", rollNo: "04", standard: "10A" },
+    date: today, punchIn: "07:55:20", punchOut: "14:35:42", serialNumber: "DEV-001", status: "Present", temperature: 36.4, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "5", code: "STU005", name: "Vihaan Singh", gender: "Male", contact: "9876543214", rollNo: "05", standard: "10A" },
+    date: today, punchIn: null, punchOut: null, serialNumber: "DEV-001", status: "On Leave", logCount: 0,
+  },
+  {
+    student: { id: "6", code: "STU006", name: "Diya Reddy", gender: "Female", contact: "9876543215", rollNo: "06", standard: "10A" },
+    date: today, punchIn: "08:02:17", punchOut: "14:29:03", serialNumber: "DEV-001", status: "Present", temperature: 36.6, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "7", code: "STU007", name: "Arjun Nair", gender: "Male", contact: "9876543216", rollNo: "07", standard: "10A" },
+    date: today, punchIn: "09:10:44", punchOut: "14:32:18", serialNumber: "DEV-001", status: "Late", temperature: 36.8, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "8", code: "STU008", name: "Ishita Verma", gender: "Female", contact: "9876543217", rollNo: "08", standard: "10A" },
+    date: today, punchIn: "08:00:05", punchOut: "14:25:33", serialNumber: "DEV-001", status: "Present", temperature: 36.3, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "9", code: "STU009", name: "Kabir Joshi", gender: "Male", contact: "9876543218", rollNo: "09", standard: "10A" },
+    date: today, punchIn: null, punchOut: null, serialNumber: "DEV-001", status: "Absent", logCount: 0,
+  },
+  {
+    student: { id: "10", code: "STU010", name: "Myra Khan", gender: "Female", contact: "9876543219", rollNo: "10", standard: "10A" },
+    date: today, punchIn: "07:58:29", punchOut: "14:31:47", serialNumber: "DEV-001", status: "Present", temperature: 36.5, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "11", code: "STU011", name: "Reyansh Chopra", gender: "Male", contact: "9876543220", rollNo: "11", standard: "10A" },
+    date: today, punchIn: "08:03:55", punchOut: "14:27:12", serialNumber: "DEV-001", status: "Present", temperature: 36.4, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "12", code: "STU012", name: "Sara Ali", gender: "Female", contact: "9876543221", rollNo: "12", standard: "10A" },
+    date: today, punchIn: null, punchOut: null, serialNumber: "DEV-001", status: "On Leave", logCount: 0,
+  },
+  {
+    student: { id: "13", code: "STU013", name: "Aditya Kumar", gender: "Male", contact: "9876543222", rollNo: "13", standard: "10A" },
+    date: today, punchIn: "08:50:30", punchOut: "14:33:05", serialNumber: "DEV-001", status: "Late", temperature: 36.9, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "14", code: "STU014", name: "Navya Iyer", gender: "Female", contact: "9876543223", rollNo: "14", standard: "10A" },
+    date: today, punchIn: "07:50:12", punchOut: "14:34:28", serialNumber: "DEV-001", status: "Present", temperature: 36.2, temperatureState: "Normal", logCount: 2,
+  },
+  {
+    student: { id: "15", code: "STU015", name: "Vivaan Desai", gender: "Male", contact: "9876543224", rollNo: "15", standard: "10A" },
+    date: today, punchIn: null, punchOut: null, serialNumber: "DEV-001", status: "Absent", logCount: 0,
+  },
+];
+
+function computeSummary(recs: AttendanceRecord[]): AttendanceSummary {
+  return {
+    total: recs.length,
+    present: recs.filter((r) => r.status === "Present").length,
+    absent: recs.filter((r) => r.status === "Absent").length,
+    late: recs.filter((r) => r.status === "Late").length,
+    onLeave: recs.filter((r) => r.status === "On Leave").length,
+  };
+}
 
 export function useAttendance() {
-  const [records, setRecords] = useState<AttendanceRecord[]>([]);
-  const [summary, setSummary] = useState<AttendanceSummary>(defaultSummary);
+  const [records, setRecords] = useState<AttendanceRecord[]>(staticRecords);
   const [filter, setFilter] = useState<FilterState>(defaultFilter);
-  const [syncing, setSyncing] = useState(false);
-  const [syncedAt, setSyncedAt] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [syncing] = useState(false);
+  const [syncedAt] = useState<string | null>(new Date().toISOString());
+  const [error] = useState<string | null>(null);
   const [page, setPage] = useState(0);
 
   const PER_PAGE = 10;
 
-  const sync = useCallback(async (date?: string) => {
-    setSyncing(true);
-    setError(null);
-
-    const syncDate = date ?? filter.date;
-
-    try {
-      const res = await fetch(`/api/attendance?date=${syncDate}`);
-      const data: SyncResult = await res.json();
-
-      if (!data.success) {
-        setError(data.error ?? "Sync failed");
-        return;
-      }
-
-      setRecords(data.records);
-      setSummary(data.summary);
-      setSyncedAt(data.syncedAt);
-      setPage(0);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Network error");
-    } finally {
-      setSyncing(false);
-    }
-  }, [filter.date]);
-
-  useEffect(() => {
-    sync();
-  }, [filter.date, sync]);
+  // Sync is a no-op with static data
+  const sync = useCallback(async (_date?: string) => {
+    // No-op: data is static
+  }, []);
 
   const markLeave = useCallback(async (studentCode: string) => {
-    const date = filter.date;
-    try {
-      await fetch("/api/attendance", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ studentCode, date }),
-      });
-
-      // Optimistically update UI
-      setRecords((prev) =>
-        prev.map((r) =>
-          r.student.code === studentCode
-            ? { ...r, status: "On Leave" }
-            : r
-        )
-      );
-
-      // Recompute summary
-      setSummary((prev) => ({
-        ...prev,
-        absent: Math.max(0, prev.absent - 1),
-        onLeave: prev.onLeave + 1,
-      }));
-    } catch {
-      setError("Failed to mark leave");
-    }
-  }, [filter.date]);
+    setRecords((prev) =>
+      prev.map((r) =>
+        r.student.code === studentCode
+          ? { ...r, status: "On Leave" as const }
+          : r
+      )
+    );
+  }, []);
 
   const updateFilter = useCallback((patch: Partial<FilterState>) => {
     setFilter((prev) => ({ ...prev, ...patch }));
@@ -114,20 +134,14 @@ export function useAttendance() {
     });
   }, [records, filter.search, filter.status]);
 
-  const filteredSummary: AttendanceSummary = useMemo(() => ({
-    total: filtered.length,
-    present: filtered.filter((r) => r.status === "Present").length,
-    absent: filtered.filter((r) => r.status === "Absent").length,
-    late: filtered.filter((r) => r.status === "Late").length,
-    onLeave: filtered.filter((r) => r.status === "On Leave").length,
-  }), [filtered]);
+  const filteredSummary = useMemo(() => computeSummary(filtered), [filtered]);
 
   const totalPages = Math.ceil(filtered.length / PER_PAGE);
   const paged = filtered.slice(page * PER_PAGE, (page + 1) * PER_PAGE);
 
   return {
     records: paged,
-    summary: records.length ? filteredSummary : summary,
+    summary: filteredSummary,
     filter,
     updateFilter,
     syncing,
