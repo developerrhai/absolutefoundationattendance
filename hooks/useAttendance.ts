@@ -16,7 +16,7 @@ const defaultFilter: FilterState = {
   date: today,
 };
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = "https://absolutefoundationattend.rhaitech.online/api";
 
 function computeSummary(recs: AttendanceRecord[]): AttendanceSummary {
   return {
