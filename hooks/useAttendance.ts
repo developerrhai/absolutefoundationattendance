@@ -16,7 +16,7 @@ const defaultFilter: FilterState = {
   date: today,
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://absolutefoundationattend.rhaitech.online/api";
+const API_BASE = "https://absolutefoundationattend.rhaitech.online/api"; // Temporarily pointing to local backend to bypass the EC2 crash
 
 function computeSummary(recs: AttendanceRecord[]): AttendanceSummary {
   return {
@@ -91,44 +91,44 @@ export function useAttendance() {
   // }, []);
 
   const fetchAttendance = useCallback(async (targetDate: string) => {
-  setSyncing(true);
-  setError(null);
-  try {
-    const res = await fetch(`${API_BASE}/attendance?date=${targetDate}`);
-    if (!res.ok) {
-      let errData;
-      try {
-        errData = await res.json();
-      } catch {
-        throw new Error(`Server returned a non-JSON error (status ${res.status}). Ensure the backend is running properly.`);
+    setSyncing(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/attendance?date=${targetDate}`);
+      if (!res.ok) {
+        let errData;
+        try {
+          errData = await res.json();
+        } catch {
+          throw new Error(`Server returned a non-JSON error (status ${res.status}). Ensure the backend is running properly.`);
+        }
+        throw new Error(errData.error || "Failed to fetch attendance.");
       }
-      throw new Error(errData.error || "Failed to fetch attendance.");
+      const data = await res.json();
+
+      // ✅ ADD THIS — normalize whatever shape the API returns into r.student.*
+      const mapped = (data.records ?? []).map((r: any) => ({
+        ...r,
+        student: {
+          id: r.student?.id ?? r.studentId ?? r.id ?? "",
+          code: r.student?.code ?? r.studentCode ?? r.code ?? "",
+          name: r.student?.name ?? r.studentName ?? r.name ?? "",
+          gender: r.student?.gender ?? r.gender ?? "",
+          contact: r.student?.contact ?? r.contact ?? "",
+          rollNo: r.student?.rollNo ?? r.rollNo ?? "",
+          standard: r.student?.standard ?? r.standard ?? "",
+        },
+      }));
+
+      setRecords(mapped);
+      setSyncedAt(data.syncedAt);
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to fetch attendance.");
+    } finally {
+      setSyncing(false);
     }
-    const data = await res.json();
-
-    // ✅ ADD THIS — normalize whatever shape the API returns into r.student.*
-    const mapped = (data.records ?? []).map((r: any) => ({
-      ...r,
-      student: {
-        id:       r.student?.id       ?? r.studentId   ?? r.id       ?? "",
-        code:     r.student?.code     ?? r.studentCode ?? r.code     ?? "",
-        name:     r.student?.name     ?? r.studentName ?? r.name     ?? "",
-        gender:   r.student?.gender   ?? r.gender                    ?? "",
-        contact:  r.student?.contact  ?? r.contact                   ?? "",
-        rollNo:   r.student?.rollNo   ?? r.rollNo                    ?? "",
-        standard: r.student?.standard ?? r.standard                  ?? "",
-      },
-    }));
-
-    setRecords(mapped);
-    setSyncedAt(data.syncedAt);
-  } catch (err: any) {
-    console.error(err);
-    setError(err.message || "Failed to fetch attendance.");
-  } finally {
-    setSyncing(false);
-  }
-}, []);
+  }, []);
 
   // Fetch on date change
   useEffect(() => {
