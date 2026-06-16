@@ -61,8 +61,8 @@ export default function AttendancePage() {
 
       for (const row of rows) {
         await addEmployee({
-          code:     row["Employee ID"] ?? row["Code"] ?? row["ID"]  ?? "",
-          name:     row["Name"]        ?? row["Employee Name"]       ?? "",
+          code:     row["Employee Code"] ?? row["Employee ID"] ?? row["Code"] ?? row["ID"]  ?? "",
+          name:     row["Employee Name"] ?? row["Name"]        ?? "",
           gender:   row["Gender"]                                    ?? "",
           contact:  row["Contact"]     ?? row["Phone"]               ?? "",
           rollNo:   row["Roll No"]     ?? row["Roll Number"]         ?? "",
