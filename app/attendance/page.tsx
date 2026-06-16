@@ -65,7 +65,7 @@ export default function AttendancePage() {
           date:       row["Date"]          ?? filter.date,
           checkIn:    row["Check In"]      ?? "",
           checkOut:   row["Check Out"]     ?? "",
-          status:    (row["Status"] as AttendanceRecord["status"]) ?? "present",
+          status: (row["Status"] as AttendanceRecord["status"]) ?? "Present",
         });
       }
     } catch (err) {
