@@ -38,7 +38,7 @@ export default function AttendancePage() {
   const [importError, setImportError] = useState<string | null>(null);
   const importRef = useRef<HTMLInputElement>(null);
 
-  // ─── Import Excel ────────────────────────────────────────────────────────────
+  // ─── Import Excel ─────────────────────────────────────────────────────────
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -58,40 +58,43 @@ export default function AttendancePage() {
       }
 
       for (const row of rows) {
-     await addEmployee({
-        code:     row["Employee ID"] ?? row["Code"] ?? row["ID"] ?? "",
-        name:     row["Name"]        ?? row["Employee Name"]     ?? "",
-        gender:   row["Gender"]      ?? "",
-        contact:  row["Contact"]     ?? row["Phone"]             ?? "",
-        rollNo:   row["Roll No"]     ?? row["Roll Number"]       ?? "",
-        standard: row["Standard"]    ?? row["Class"]             ?? "",
-        status:  (row["Status"] as AttendanceRecord["status"])   ?? "Present",
-        punchIn:  row["Check In"]    ?? row["Punch In"]          ?? "",
-        punchOut: row["Check Out"]   ?? row["Punch Out"]         ?? "",
-      });
+        await addEmployee({
+          code:     row["Employee ID"] ?? row["Code"] ?? row["ID"]  ?? "",
+          name:     row["Name"]        ?? row["Employee Name"]       ?? "",
+          gender:   row["Gender"]                                    ?? "",
+          contact:  row["Contact"]     ?? row["Phone"]               ?? "",
+          rollNo:   row["Roll No"]     ?? row["Roll Number"]         ?? "",
+          standard: row["Standard"]    ?? row["Class"]               ?? "",
+          status:  (row["Status"] as AttendanceRecord["status"])     ?? "Present",
+          punchIn:  row["Punch In"]    ?? row["Check In"]            ?? "",
+          punchOut: row["Punch Out"]   ?? row["Check Out"]           ?? "",
+        });
       }
     } catch (err) {
       setImportError("Failed to parse the Excel file. Please check the format.");
       console.error(err);
     } finally {
       setImporting(false);
-      e.target.value = ""; // ✅ Fixed: was e.target.value("") — assignment, not a call
+      e.target.value = "";
     }
   };
 
-  // ─── Export Excel ────────────────────────────────────────────────────────────
+  // ─── Export Excel ─────────────────────────────────────────────────────────
   const handleExport = () => {
     if (records.length === 0) return;
 
-    // Map records to flat rows with friendly column names
+    // ✅ Uses correct nested AttendanceRecord shape (r.student.*)
     const rows = records.map((r) => ({
-      "Employee ID":  r.employeeId,
-      "Name":         r.name,
-      "Department":   r.department,
-      "Date":         r.date,
-      "Check In":     r.checkIn  ?? "",
-      "Check Out":    r.checkOut ?? "",
-      "Status":       r.status,
+      "Employee ID": r.student.code,
+      "Name":        r.student.name,
+      "Roll No":     r.student.rollNo,
+      "Standard":    r.student.standard,
+      "Gender":      r.student.gender,
+      "Contact":     r.student.contact,
+      "Date":        r.date,
+      "Punch In":    r.punchIn  ?? "",
+      "Punch Out":   r.punchOut ?? "",
+      "Status":      r.status,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(rows);
@@ -101,14 +104,13 @@ export default function AttendancePage() {
       wch: Math.max(
         key.length,
         ...rows.map((r) => String(r[key as keyof typeof r] ?? "").length)
-      ) + 2, // +2 padding
+      ) + 2,
     }));
     worksheet["!cols"] = colWidths;
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Attendance");
 
-    // File name e.g. "attendance-2024-06-15.xlsx"
     const fileName = `attendance-${filter.date ?? new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
@@ -142,7 +144,7 @@ export default function AttendancePage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/>
             </svg>
-            Add Employee
+            Add Student
           </button>
 
           {/* Hidden file input */}
@@ -154,7 +156,7 @@ export default function AttendancePage() {
             onChange={handleImport}
           />
 
-          {/* Import Excel button */}
+          {/* Import Excel */}
           <button
             onClick={() => importRef.current?.click()}
             disabled={importing}
@@ -166,7 +168,7 @@ export default function AttendancePage() {
             {importing ? "Importing..." : "Import Excel"}
           </button>
 
-          {/* Export Excel button */}
+          {/* Export Excel */}
           <button
             onClick={handleExport}
             disabled={records.length === 0}
