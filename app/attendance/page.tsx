@@ -29,6 +29,8 @@ export default function AttendancePage() {
     addEmployee,
     editRecord,
     deleteRecord,
+    notifyWhatsApp,
+    notifyingWhatsApp,
   } = useAttendance();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -178,6 +180,18 @@ export default function AttendancePage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
             </svg>
             Export Excel
+          </button>
+
+          {/* Notify WhatsApp */}
+          <button
+            onClick={() => notifyWhatsApp(filter.date)}
+            disabled={records.length === 0 || notifyingWhatsApp}
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+          >
+            <svg className={`w-4 h-4 ${notifyingWhatsApp ? "animate-spin" : ""}`} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            {notifyingWhatsApp ? "Sending..." : "Notify WhatsApp"}
           </button>
         </div>
       </div>

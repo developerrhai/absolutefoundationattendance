@@ -66,6 +66,7 @@ export function useAttendance() {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(0);
   const [biometricImportCode, setBiometricImportCode] = useState<string | null>(null);
+  const [notifyingWhatsApp, setNotifyingWhatsApp] = useState(false);
 
   const PER_PAGE = 10;
 
@@ -359,6 +360,36 @@ export function useAttendance() {
     []
   );
 
+  // ── Notify WhatsApp ───────────────────────────────────────────────
+  const notifyWhatsApp = useCallback(async (targetDate?: string) => {
+    const d = targetDate || filter.date;
+    setNotifyingWhatsApp(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/attendance/notify-whatsapp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: d }),
+      });
+      if (!res.ok) {
+        let errData;
+        try {
+          errData = await res.json();
+        } catch {
+          throw new Error(`Server returned a non-JSON error (status ${res.status}).`);
+        }
+        throw new Error(errData.error || "Failed to notify WhatsApp.");
+      }
+      const data = await res.json();
+      alert(data.message); // Simple alert to notify success summary
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to notify WhatsApp.");
+    } finally {
+      setNotifyingWhatsApp(false);
+    }
+  }, [filter.date]);
+
   // ── Filter & Pagination ───────────────────────────────────────────
   const updateFilter = useCallback((patch: Partial<FilterState>) => {
     setFilter((prev) => ({ ...prev, ...patch }));
@@ -405,5 +436,7 @@ export function useAttendance() {
     deleteRecord,
     importToBiometric,
     biometricImportCode,
+    notifyWhatsApp,
+    notifyingWhatsApp,
   };
 }
